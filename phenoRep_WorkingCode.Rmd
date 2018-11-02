@@ -40,4 +40,77 @@ Here's a cache of AppEEARS tasks for landcover, NDVI etc:
 appeears_tasks     = readRDS(file = './AppEEARS_data/cache_df.df')
 ```
 
-I'll add some code to pull in the rasters after my next meeting :)
+From here you would use the AppEEARS.R function to pull in the data.  The data is a series of netcdf files.  You'll just want the land cover classification for now.  Also, I've thrown up a whole US landcover if you want to think bigger :)
+
+Here's a snippet of code if you want to just clip from the larger entire US geotiff:
+```{r}
+# Creates boundary box for clipping rasters using lat/lon from phenocam site
+#where lat and lon could be extracted from the PhenoCam API metadata df above, and r is the raster or geotiff that you want to work with.
+#Where primary is equal to the primary vegetation type from the phenocam API metadata df
+#Reclassify selects a match between the phenocam primary vegetation and the raster/geotiff vegetation.  You could probably simplify this a bit, it's lifted from our PhenoSynth shiny r interface so it had to be reactive
+crop_raster = function(lat_, lon_, r_, reclassify=FALSE, primary=NULL){
+  height = .03
+  width  = .05
+  e      = as(extent(lon_-width, lon_ + width, lat_ - height, lat_ + height), 'SpatialPolygons')
+  crs(e) <- "+proj=longlat +datum=WGS84 +no_defs"
+  r        = raster::crop(r_, e, snap='near')
+  
+  if (reclassify == FALSE){
+    return (r)
+    
+  }else if (reclassify == TRUE){
+    
+    water = 17*2
+    
+    m = c(1,2,
+          2,2,
+          3,2,
+          4,2,
+          5,2,
+          6,2,
+          7,2,
+          8,2,
+          9,2,
+          10,2,
+          11,2,
+          12,2,
+          13,2,
+          14,2,
+          15,2,
+          16,2,
+          17,2)
+    
+    if(!is.null(primary)){
+      prim    = primary*2
+      m[prim] = 1
+    }
+    
+    rclmat = matrix(m, ncol=2, byrow=TRUE)
+    rc     = raster::reclassify(r, rclmat)
+    if (length(unique(values(rc))) == 1){
+      
+      m = c(1,NA,
+            2,NA,
+            3,NA,
+            4,NA,
+            5,NA,
+            6,NA,
+            7,NA,
+            8,NA,
+            9,NA,
+            10,NA,
+            11,NA,
+            12,NA,
+            13,NA,
+            14,NA,
+            15,NA,
+            16,NA,
+            17,NA)
+      
+      rclmat = matrix(m, ncol=2, byrow=TRUE)
+      rc     = raster::reclassify(r, rclmat)
+    }
+    return (rc)
+  }
+}
+```
