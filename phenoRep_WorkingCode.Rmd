@@ -1,0 +1,43 @@
+---
+title: "phenoRep_WorkingCode"
+author: "K. Duffy"
+date: "11/2/2018"
+output: html_document
+---
+Load libraries
+```{r setup, include=FALSE}
+library(sp)
+library(ncdf4)
+library(rvest)
+library(raster)
+library(jsonlite)
+library(rgdal)
+```
+
+Grab PhenoCam data via API:
+```{r}
+c      = jsonlite::fromJSON('https://phenocam.sr.unh.edu/api/cameras/?format=json&limit=2000')
+c = c$results
+c_m=c$sitemetadata #the metadata is a little messy as it's nested, so I fixed that here:
+c$sitemetadata=NULL
+cams_=cbind(c, c_m)
+cams_[is.na(cams_)] = 'N'
+```
+
+Here's a PFT key to reclassify PhenoCam Primary veg to query MODIS landcover data:
+
+```{r}
+pft_key = c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,254,255)
+pft_abbreviated = c('Water','EN','EB','DN','DB','MF','SH','SH','SV','SV','GR','WL','AG','UB','MX','TN','UN','NAN','NAN')
+pft_expanded = c('Water', 'Evergreen Needleleaf Forest', 'Evergreen Broadleaf Forest', 'Deciduous Needleleaf Forest', 'Deciduous Broadleaf Forest', 'Mixed Forest',
+                 'Shrubland', 'Shrubland', 'Savanna', 'Savanna','Grassland', 'Wetland', 'Agriculture', 'Urban', 'Mixed Forest', 'Tundra', 'No Vegetation', 'Unclassified', 'Unclassified' )
+pft_df = data.frame(pft_key,pft_abbreviated,pft_expanded)
+```
+
+Here's a cache of AppEEARS tasks for landcover, NDVI etc:
+```{r}
+# Load in dataframe with cached AppEEARS tasks
+appeears_tasks     = readRDS(file = './AppEEARS_data/cache_df.df')
+```
+
+I'll add some code to pull in the rasters after my next meeting :)
